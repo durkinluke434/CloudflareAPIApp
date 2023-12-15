@@ -1,0 +1,102 @@
+{
+    "result": [
+        {
+            "id": "3ff4e43edaf48ebbeb707064e4b7d730",
+            "zone_id": "88d4739fac8a3af189093453fc3facc8",
+            "zone_name": "codemingle.co.uk",
+            "name": "codemingle.co.uk",
+            "type": "A",
+            "content": "15.197.148.33",
+            "proxiable": true,
+            "proxied": true,
+            "ttl": 1,
+            "locked": false,
+            "meta": {
+                "auto_added": false,
+                "managed_by_apps": false,
+                "managed_by_argo_tunnel": false,
+                "source": "primary"
+            },
+            "comment": null,
+            "tags": [],
+            "created_on": "2023-09-21T15:55:00.467318Z",
+            "modified_on": "2023-09-21T15:55:00.467318Z"
+        },
+        {
+            "id": "7b5259592ad13b831b5c1899ef90faba",
+            "zone_id": "88d4739fac8a3af189093453fc3facc8",
+            "zone_name": "codemingle.co.uk",
+            "name": "codemingle.co.uk",
+            "type": "A",
+            "content": "3.33.130.190",
+            "proxiable": true,
+            "proxied": true,
+            "ttl": 1,
+            "locked": false,
+            "meta": {
+                "auto_added": false,
+                "managed_by_apps": false,
+                "managed_by_argo_tunnel": false,
+                "source": "primary"
+            },
+            "comment": null,
+            "tags": [],
+            "created_on": "2023-09-21T15:55:00.457994Z",
+            "modified_on": "2023-09-21T15:55:00.457994Z"
+        },
+        {
+            "id": "ce5b4f7c15f41d4c34c1974fc7b716d1",
+            "zone_id": "88d4739fac8a3af189093453fc3facc8",
+            "zone_name": "codemingle.co.uk",
+            "name": "_domainconnect.codemingle.co.uk",
+            "type": "CNAME",
+            "content": "_domainconnect.gd.domaincontrol.com",
+            "proxiable": true,
+            "proxied": true,
+            "ttl": 1,
+            "locked": false,
+            "meta": {
+                "auto_added": false,
+                "managed_by_apps": false,
+                "managed_by_argo_tunnel": false,
+                "source": "primary"
+            },
+            "comment": null,
+            "tags": [],
+            "created_on": "2023-09-21T15:55:00.487229Z",
+            "modified_on": "2023-09-21T15:55:00.487229Z"
+        },
+        {
+            "id": "000d912b4c9193f909d85312ed193d42",
+            "zone_id": "88d4739fac8a3af189093453fc3facc8",
+            "zone_name": "codemingle.co.uk",
+            "name": "www.codemingle.co.uk",
+            "type": "CNAME",
+            "content": "codemingle.co.uk",
+            "proxiable": true,
+            "proxied": true,
+            "ttl": 1,
+            "locked": false,
+            "meta": {
+                "auto_added": false,
+                "managed_by_apps": false,
+                "managed_by_argo_tunnel": false,
+                "source": "primary"
+            },
+            "comment": null,
+            "tags": [],
+            "created_on": "2023-09-21T15:55:00.476752Z",
+            "modified_on": "2023-09-21T15:55:00.476752Z"
+        }
+    ],
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result_info": {
+        "page": 1,
+        "per_page": 100,
+        "count": 4,
+        "total_count": 4,
+        "total_pages": 1
+    }
+}
