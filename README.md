@@ -1,36 +1,30 @@
-Project Title: Cloudflare API GUI Tool
-Description
-This tool is a graphical user interface (GUI) application built to interact with Cloudflare's API. It allows users to easily perform operations such as listing zones, managing DNS records, and accessing other Cloudflare services without the need for direct API calls through command-line tools.
+# Cloudflare API GUI Tool
 
-Features
-User-friendly interface for interacting with Cloudflare's API.
-Preset endpoints for quick access to common API functions.
-Secure API token storage using system keyring.
-Response display and export capabilities.
-Installation
-Prerequisites
-Python 3.x
-pip (Python package manager)
-Dependencies
-Before running the application, install the required Python packages:
+Cloudflare API GUI is a desktop application built to interact with Cloudflare's API, providing an easy-to-use graphical interface for managing DNS records and other Cloudflare settings.
 
-bash
-Copy code
-pip install requests keyring tkinter
-Running the Application
-To run the application, navigate to the application directory and execute:
+## Features
 
-bash
-Copy code
-python cloudflare_gui.py
-Usage
-API Token: Enter your Cloudflare API token.
-Email: Enter your Cloudflare account email.
-ID Type and ID: Select the ID type (Account ID or Zone ID) and enter the corresponding ID.
-Endpoint Suffix: Select a preset endpoint or enter a custom endpoint suffix.
-HTTP Method: Select the HTTP method for your API request.
-Parameters (JSON): If required, enter the JSON parameters for your API request.
-Click on Make API Call to send the request.
-View the response in the response display section or export it as a JSON file.
-Contributing
-Contributions to the project are welcome! Please refer to the CONTRIBUTING.md for guidelines.
+- Easy authentication with API key storage.
+- A simple form to interact with various Cloudflare API endpoints.
+- Ability to list, create, edit, and delete DNS records.
+- View analytics dashboard, manage page rules, rate limits, firewall rules, and more.
+- Securely save and retrieve your API key using the system's keyring service.
+- Validate inputs to ensure proper API call formats.
+
+## Usage
+Enter your Cloudflare API key and email address.
+Select the ID type (Account ID/Zone ID) and the desired HTTP method.
+Fill in any additional parameters required for the API call.
+Choose the endpoint you wish to interact with from the dropdown menu.
+Click 'Make API Call' to send the request to Cloudflare's API.
+View the response in a new window.
+
+## Contributing
+Contributions to the Cloudflare API GUI are welcome! Please read CONTRIBUTING.md for details on our code of conduct, and the process for submitting pull requests.
+
+## Versioning
+We use SemVer for versioning. For the versions available, see the tags on this repository.
+
+Authors
+Luke Durkin - Initial work - durkinluke434
+
