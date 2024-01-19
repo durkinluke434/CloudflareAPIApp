@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 import json
 import keyring
+from tooltip import Tooltip #Import tooltip class
 from CloudflareAPIHandler import CloudflareAPIHandler  # Import the new handler class
 from dialog import CreateDNSRecordDialog
 
@@ -12,16 +13,17 @@ class CloudflareAPIGUI:
     def __init__(self, root):
         try:
             self.root = root
-            self.initialize_fields()  # Initializes the StringVar attributes
-            self.api_prefix = "https://api.cloudflare.com/client/v4"  # Now you can set api_prefix
-            # In the __init__ method of CloudflareAPIGUI class
+            self.initialize_fields() 
+                # Load API prefix from config file
+            with open('config.json', 'r') as config_file:
+                config = json.load(config_file)
+                self.api_prefix = config.get('api_prefix', "https://api.cloudflare.com/client/v4")
             self.api_handler = CloudflareAPIHandler(self.api_prefix, self.email.get())
 
             root.title("Cloudflare API Interaction Tool")
             self.create_widgets()
             self.response_window = None
             # Check if the API key is set in the keyring at startup
-# In your __init__ method
             api_key = keyring.get_password("CloudflareAPI", "api_key")
             if api_key and api_key.strip():  # Check if API key is not just empty spaces
                 self.api_key_status_label.config(text="API Key Status: Set", fg="green")
@@ -113,6 +115,9 @@ class CloudflareAPIGUI:
         self.api_key_entry = tk.Entry(self.root, textvariable=self.api_key, show="*", width=50)
         self.api_key_entry.bind("<FocusOut>", self.save_api_key)
         self.api_key_entry.grid(row=0, column=1, columnspan=2, sticky=tk.W + tk.E)
+        # Add tooltip
+        Tooltip(self.api_key_entry, "Enter your Cloudflare API key here.")
+
     
     def create_api_key_status_label(self):
         self.api_key_status_label = tk.Label(self.root, text="API Key Status: Not set", fg="red")
