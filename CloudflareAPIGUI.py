@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 import json
 import keyring
+import threading
 from tooltip import Tooltip #Import tooltip class
 from CloudflareAPIHandler import CloudflareAPIHandler  # Import the new handler class
 from dialog import CreateDNSRecordDialog
@@ -19,10 +20,11 @@ class CloudflareAPIGUI:
                 config = json.load(config_file)
                 self.api_prefix = config.get('api_prefix', "https://api.cloudflare.com/client/v4")
             self.api_handler = CloudflareAPIHandler(self.api_prefix, self.email.get())
-
             root.title("Cloudflare API Interaction Tool")
             self.create_widgets()
             self.response_window = None
+            self.loading = tk.BooleanVar(value=False)
+            self.configure_ui()
             # Check if the API key is set in the keyring at startup
             api_key = keyring.get_password("CloudflareAPI", "api_key")
             if api_key and api_key.strip():  # Check if API key is not just empty spaces
@@ -44,6 +46,15 @@ class CloudflareAPIGUI:
         style.configure('TEntry', font=('Helvetica', 10), padding=6)
         style.configure('TCombobox', font=('Helvetica', 10), padding=6)
         self.root.option_add('*Font', ('Helvetica', 10))
+        self.loading_label = tk.Label(self.root, text="Loading...", fg="blue")
+        self.loading_label.grid(row=9, column=0, columnspan=3)
+        self.loading_label.grid_remove()  # Hide it initially
+
+    def update_loading_indicator(self):
+        if self.loading.get():
+            self.loading_label.grid()
+        else:
+            self.loading_label.grid_remove()
 
     def initialize_fields(self):
         # Initialize your variables here
@@ -253,53 +264,52 @@ class CloudflareAPIGUI:
 
     def make_api_call(self):
         print("API Call button clicked.")
+        self.loading.set(True)
+        self.update_loading_indicator()
 
-        # Gather input values and validate them
-        api_key = self.api_key.get().strip()
-        email = self.email.get().strip()
-        http_method = self.http_method.get()
-        id_value = self.id_value.get().strip()
-        dns_record_id = self.dns_record_identifier.get().strip()
-
-        if not self.validate_inputs():
-            return
-
-        # Get the correct endpoint from the mapping
-        friendly_endpoint = self.endpoint_suffix_combo.get()
-        selected_endpoint = self.endpoint_mapping[friendly_endpoint]
-
-        # Replace placeholders in the endpoint
-        if ':zone_identifier' in selected_endpoint and id_value:
-            selected_endpoint = selected_endpoint.replace(':zone_identifier', id_value)
-        if ':identifier' in selected_endpoint and dns_record_id:
-            selected_endpoint = selected_endpoint.replace(':identifier', dns_record_id)
-
-        # Now make the API call
-        try:
-            response_data = self.api_handler.make_api_call_sync(
-                http_method=http_method,
-                endpoint_suffix=selected_endpoint,
-                email=email,
-                parameters=json.loads(self.parameters.get()) if self.parameters.get() else None,
-                zone_id=id_value,
-                dns_record_id=dns_record_id
-            )
-            # Display the response
-            self.display_response_in_new_window(json.dumps(response_data, indent=4))
-        except Exception as e:
-            messagebox.showerror("API Call Failed", str(e))
+        # Start the API call in a new thread
+        api_call_thread = threading.Thread(target=self.threaded_api_call)
+        api_call_thread.start()
 
 
 
-    def threaded_api_call(self, api_key, email, http_method, endpoint_suffix, parameters):
-        try:
-            # Call the synchronous API method
-            response_data = self.api_handler.make_api_call_sync(
-                http_method, endpoint_suffix, parameters)
-            # Schedule the response to be displayed in the GUI
-            self.root.after(0, self.display_response_in_new_window, json.dumps(response_data, indent=4))
-        except Exception as e:
-            self.root.after(0, messagebox.showerror, "API Call Failed", str(e))
+    def threaded_api_call(self):
+            # Gather input values
+            api_key = self.api_key.get().strip()
+            email = self.email.get().strip()
+            http_method = self.http_method.get()
+            id_value = self.id_value.get().strip()
+            dns_record_id = self.dns_record_identifier.get().strip()
+
+            # Validate inputs
+            if not self.validate_inputs():
+                self.loading.set(False)
+                self.update_loading_indicator()
+                return
+
+            # Prepare the endpoint suffix from the selected endpoint
+            friendly_endpoint = self.endpoint_suffix_combo.get()
+            selected_endpoint = self.endpoint_mapping[friendly_endpoint]
+
+            # Make the API call
+            try:
+                response_data = self.api_handler.make_api_call_sync(
+                    http_method, selected_endpoint, email,
+                    json.loads(self.parameters.get()) if self.parameters.get() else None,
+                    zone_id=id_value, dns_record_id=dns_record_id
+                )
+
+                # Schedule the response to be displayed in the GUI
+                self.root.after(0, self.display_response_in_new_window, json.dumps(response_data, indent=4))
+            except Exception as e:
+                self.root.after(0, messagebox.showerror, "API Call Failed", str(e))
+
+            # Update loading state
+            self.root.after(0, self.update_loading_state)
+
+    def update_loading_state(self):
+        self.loading.set(False)
+        self.update_loading_indicator()
 
 def main():
     root = tk.Tk()
