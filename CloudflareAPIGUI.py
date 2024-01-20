@@ -1,6 +1,7 @@
 # /path/to/CloudflareAPIGUI.py
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
+import os
 import json
 import keyring
 import threading
@@ -15,10 +16,7 @@ class CloudflareAPIGUI:
         try:
             self.root = root
             self.initialize_fields() 
-                # Load API prefix from config file
-            with open('config.json', 'r') as config_file:
-                config = json.load(config_file)
-                self.api_prefix = config.get('api_prefix', "https://api.cloudflare.com/client/v4")
+            self.api_prefix = "https://api.cloudflare.com/client/v4"
             self.api_handler = CloudflareAPIHandler(self.api_prefix, self.email.get())
             root.title("Cloudflare API Interaction Tool")
             self.create_widgets()
@@ -36,9 +34,14 @@ class CloudflareAPIGUI:
         
 
     def configure_ui(self):
-        icon_path = "cloudflare.ico"
-        self.root.iconbitmap(icon_path)
-
+        script_directory = os.path.dirname(os.path.realpath(__file__))
+        icon_path = os.path.join(script_directory, "cloudflare.ico")
+        
+        try:
+            self.root.iconbitmap(icon_path)
+        except tk.TclError as e:
+            messagebox.showerror("Initialization Error", f"Failed to initialize icon: {e}")
+        
         style = ttk.Style()
         style.theme_use('clam')
         style.configure('TButton', font=('Helvetica', 10), padding=6)
