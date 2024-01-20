@@ -1,27 +1,29 @@
 # /path/to/CloudflareAPIGUI.py
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
+import os
 import json
 import keyring
+import threading
+from tooltip import Tooltip #Import tooltip class
 from CloudflareAPIHandler import CloudflareAPIHandler  # Import the new handler class
-from dialog import CreateDNSRecordDialog
+from dialog import CreateRecordDialog
 
 class CloudflareAPIGUI:
-    # ... existing code ...
+    
 
     def __init__(self, root):
         try:
             self.root = root
-            self.initialize_fields()  # Initializes the StringVar attributes
-            self.api_prefix = "https://api.cloudflare.com/client/v4"  # Now you can set api_prefix
-            # In the __init__ method of CloudflareAPIGUI class
+            self.initialize_fields() 
+            self.api_prefix = "https://api.cloudflare.com/client/v4"
             self.api_handler = CloudflareAPIHandler(self.api_prefix, self.email.get())
-
             root.title("Cloudflare API Interaction Tool")
             self.create_widgets()
             self.response_window = None
+            self.loading = tk.BooleanVar(value=False)
+            self.configure_ui()
             # Check if the API key is set in the keyring at startup
-# In your __init__ method
             api_key = keyring.get_password("CloudflareAPI", "api_key")
             if api_key and api_key.strip():  # Check if API key is not just empty spaces
                 self.api_key_status_label.config(text="API Key Status: Set", fg="green")
@@ -32,9 +34,14 @@ class CloudflareAPIGUI:
         
 
     def configure_ui(self):
-        icon_path = "cloudflare.ico"
-        self.root.iconbitmap(icon_path)
-
+        script_directory = os.path.dirname(os.path.realpath(__file__))
+        icon_path = os.path.join(script_directory, "cloudflare.ico")
+        
+        try:
+            self.root.iconbitmap(icon_path)
+        except tk.TclError as e:
+            messagebox.showerror("Initialization Error", f"Failed to initialize icon: {e}")
+        
         style = ttk.Style()
         style.theme_use('clam')
         style.configure('TButton', font=('Helvetica', 10), padding=6)
@@ -42,6 +49,15 @@ class CloudflareAPIGUI:
         style.configure('TEntry', font=('Helvetica', 10), padding=6)
         style.configure('TCombobox', font=('Helvetica', 10), padding=6)
         self.root.option_add('*Font', ('Helvetica', 10))
+        self.loading_label = tk.Label(self.root, text="Loading...", fg="blue")
+        self.loading_label.grid(row=9, column=0, columnspan=3)
+        self.loading_label.grid_remove()  # Hide it initially
+
+    def update_loading_indicator(self):
+        if self.loading.get():
+            self.loading_label.grid()
+        else:
+            self.loading_label.grid_remove()
 
     def initialize_fields(self):
         # Initialize your variables here
@@ -56,6 +72,7 @@ class CloudflareAPIGUI:
         self.package_id_options = ["No", "Yes"]
         self.use_specific_package = tk.StringVar()
         self.specific_package_id = tk.StringVar()
+        self.general_identifier = tk.StringVar()
         self.endpoint_mapping = {
         "List Zones": "/zones",
         "Zone Details": "/zones/:zone_identifier",
@@ -104,6 +121,7 @@ class CloudflareAPIGUI:
         self.create_dns_record_identifier_entry()
         self.hide_additional_fields()
         self.create_api_key_status_label()
+        self.create_general_identifier_entry()
         self.endpoint_suffix_combo.bind('<<ComboboxSelected>>', self.on_combobox_select)
         
         #self.create_response_display()
@@ -113,6 +131,17 @@ class CloudflareAPIGUI:
         self.api_key_entry = tk.Entry(self.root, textvariable=self.api_key, show="*", width=50)
         self.api_key_entry.bind("<FocusOut>", self.save_api_key)
         self.api_key_entry.grid(row=0, column=1, columnspan=2, sticky=tk.W + tk.E)
+        # Add tooltip
+        Tooltip(self.api_key_entry, "Enter your Cloudflare API key here.")
+
+
+    def create_general_identifier_entry(self):
+        self.general_identifier_label = tk.Label(self.root, text="Identifier:")
+        self.general_identifier_entry = tk.Entry(self.root, textvariable=self.general_identifier)
+        # Initially hidden
+        self.general_identifier_label.grid_remove()
+        self.general_identifier_entry.grid_remove()
+
     
     def create_api_key_status_label(self):
         self.api_key_status_label = tk.Label(self.root, text="API Key Status: Not set", fg="red")
@@ -155,6 +184,21 @@ class CloudflareAPIGUI:
     def on_combobox_select(self, event):
         selected_endpoint = self.endpoint_suffix_combo.get()
         self.show_fields_for_endpoint(selected_endpoint)
+
+        # Determine the appropriate label text based on the selected endpoint
+        if ':identifier' in self.endpoint_mapping[selected_endpoint]:
+            identifier_type = "General ID"  # Default label text
+            if "DNS Record" in selected_endpoint:
+                identifier_type = "DNS Record ID"
+            elif "Page Rule" in selected_endpoint:
+                identifier_type = "Page Rule ID"
+            # Add more conditions as needed for other types of identifiers
+            self.general_identifier_label.config(text=f"{identifier_type}:")
+            self.general_identifier_label.grid()
+            self.general_identifier_entry.grid()
+        else:
+            self.general_identifier_label.grid_remove()
+            self.general_identifier_entry.grid_remove()
     
         # Update HTTP method based on the selected endpoint
         if "Create" in selected_endpoint:
@@ -166,9 +210,20 @@ class CloudflareAPIGUI:
         else:
             self.http_method.set("GET")  # Default to GET for listing and details endpoints
     
-    # If the selected endpoint is to create a DNS record, open the dialog to enter details
-        if selected_endpoint == "Create DNS Record":
-            self.open_create_dns_record_dialog()
+        record_type = ""
+
+        if "DNS Record" in selected_endpoint:
+            record_type = "DNS"
+        elif "Page Rule" in selected_endpoint:
+            record_type = "PageRule"
+        elif "Firewall Rule" in selected_endpoint:
+            record_type = "FirewallRule"
+
+        if record_type:
+            dialog = CreateRecordDialog(self.root, record_type)
+            self.root.wait_window(dialog.top)
+            if dialog.result:
+                self.parameters.set(json.dumps(dialog.result))
     
         self.method_menu.config(state='readonly')  # Optional: Make the method menu read-only if you don't want it to be changeable
 
@@ -248,53 +303,54 @@ class CloudflareAPIGUI:
 
     def make_api_call(self):
         print("API Call button clicked.")
+        self.loading.set(True)
+        self.update_loading_indicator()
 
-        # Gather input values and validate them
-        api_key = self.api_key.get().strip()
-        email = self.email.get().strip()
+        # Retrieve the required identifiers
+        zone_id = self.id_value.get().strip()
+        general_id = self.general_identifier.get().strip() if ':identifier' in selected_endpoint else None
+
+        # Get the endpoint and method
+        selected_endpoint = self.endpoint_suffix_combo.get()
         http_method = self.http_method.get()
-        id_value = self.id_value.get().strip()
-        dns_record_id = self.dns_record_identifier.get().strip()
 
-        if not self.validate_inputs():
-            return
+        # Prepare the payload for POST/PUT requests
+        payload = json.loads(self.parameters.get()) if http_method in ["POST", "PUT"] and self.parameters.get() else None
 
-        # Get the correct endpoint from the mapping
-        friendly_endpoint = self.endpoint_suffix_combo.get()
-        selected_endpoint = self.endpoint_mapping[friendly_endpoint]
+        # Start the API call in a new thread
+        api_call_thread = threading.Thread(target=self.threaded_api_call, args=(http_method, selected_endpoint, payload, zone_id, general_id))
+        api_call_thread.start()
 
-        # Replace placeholders in the endpoint
-        if ':zone_identifier' in selected_endpoint and id_value:
-            selected_endpoint = selected_endpoint.replace(':zone_identifier', id_value)
-        if ':identifier' in selected_endpoint and dns_record_id:
-            selected_endpoint = selected_endpoint.replace(':identifier', dns_record_id)
-
-        # Now make the API call
+    def threaded_api_call(self, http_method, selected_endpoint, payload, zone_id, general_id):
         try:
+            # Validate inputs before making the call
+            if not self.validate_inputs():
+                self.loading.set(False)
+                self.update_loading_indicator()
+                return
+
+            # Make the API call
             response_data = self.api_handler.make_api_call_sync(
-                http_method=http_method,
-                endpoint_suffix=selected_endpoint,
-                email=email,
-                parameters=json.loads(self.parameters.get()) if self.parameters.get() else None,
-                zone_id=id_value,
-                dns_record_id=dns_record_id
+                http_method=http_method, 
+                endpoint_suffix=selected_endpoint, 
+                email=self.email.get().strip(), 
+                parameters=payload, 
+                zone_id=zone_id, 
+                dns_record_id=general_id
             )
-            # Display the response
-            self.display_response_in_new_window(json.dumps(response_data, indent=4))
-        except Exception as e:
-            messagebox.showerror("API Call Failed", str(e))
 
-
-
-    def threaded_api_call(self, api_key, email, http_method, endpoint_suffix, parameters):
-        try:
-            # Call the synchronous API method
-            response_data = self.api_handler.make_api_call_sync(
-                http_method, endpoint_suffix, parameters)
             # Schedule the response to be displayed in the GUI
             self.root.after(0, self.display_response_in_new_window, json.dumps(response_data, indent=4))
         except Exception as e:
             self.root.after(0, messagebox.showerror, "API Call Failed", str(e))
+        finally:
+            # Update loading state
+            self.root.after(0, self.update_loading_state)
+
+    def update_loading_state(self):
+        self.loading.set(False)
+        self.update_loading_indicator()
+
 
 def main():
     root = tk.Tk()
